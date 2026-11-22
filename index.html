@@ -108,6 +108,23 @@ main{display:grid;grid-template-columns:auto clamp(280px,30vw,340px);grid-templa
 .toggle{width:34px;height:20px;border-radius:10px;background:#1d8a4e;position:relative;flex-shrink:0}
 .toggle::after{content:"";position:absolute;right:2px;top:2px;width:16px;height:16px;border-radius:50%;background:#fff}
 .toggle.off{background:#c3cddd}.toggle.off::after{right:auto;left:2px}
+.segs{display:flex;gap:6px;margin-top:10px}
+.seg{flex:1;text-align:center;font-size:12px;font-weight:bold;color:#1f4e99;border:1px solid #1f4e99;border-radius:9px;padding:6px 0}
+.seg.on{background:#1f4e99;color:#fff}
+.stack{display:flex;height:10px;border-radius:5px;overflow:hidden;margin:8px 0 2px;gap:2px}
+.stack i{display:block;height:100%}
+.lr{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:#333;padding:3px 0}
+.lr .left{gap:7px}
+.sw{width:10px;height:10px;border-radius:3px;flex-shrink:0;background:#1f4e99}
+.sw.g{background:#6b7280}.sw.t{background:#0f766e}
+.cat{display:grid;grid-template-columns:98px 1fr 50px;align-items:center;gap:6px;font-size:12px;color:#333;padding:3px 0}
+.cat .bar{margin:0}
+.cat b{text-align:right;font-size:12px}
+.ch{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:bold;margin-top:8px}
+.ch .ico{width:22px;height:14px;border-radius:3px}
+.bn{display:flex;gap:7px;align-items:flex-start;margin:4px 0 0 2px}
+.bn .dot{margin-top:4px}
+.sec{font-size:12px;font-weight:bold;color:#444;margin-top:10px}
 .toast{position:absolute;z-index:5;left:50%;bottom:84px;transform:translateX(-50%);width:max-content;max-width:232px;background:#222;color:#fff;font-size:12px;line-height:1.35;padding:8px 12px;border-radius:10px;text-align:center;opacity:0;transition:opacity .2s;pointer-events:none}
 .toast.show{opacity:1}
 [data-hint]{animation:pulse 1.6s ease-out infinite}
@@ -119,7 +136,7 @@ main{display:grid;grid-template-columns:auto clamp(280px,30vw,340px);grid-templa
 <main>
   <header class="intro">
     <h1>Bachat Alerts</h1>
-    <p>Tap the pulsing button to see how Paytm warns Priya before her cards lose her money.</p>
+    <p>Tap the pulsing button to see how Paytm shows Priya what she spends, what her cards give her, and what she is about to lose.</p>
     <p class="fine">A concept for a case study, not a Paytm product. Amounts are illustrative; nothing is paid.</p>
   </header>
   <div class="stagewrap">
@@ -130,7 +147,7 @@ main{display:grid;grid-template-columns:auto clamp(280px,30vw,340px);grid-templa
     </div>
   </div>
   <section class="panel" aria-label="Journey notes">
-    <ol class="steps" id="steps"><li>Set up</li><li>Bill</li><li>Cycle</li><li>QR</li></ol>
+    <ol class="steps" id="steps"><li>Set up</li><li>My cards</li><li>Bill</li><li>Cycle</li><li>QR</li></ol>
     <div class="note"><div class="when"><b id="when"></b><span class="pill" id="phase"></span></div><p id="note" aria-live="polite"></p></div>
         <div class="ctl"><button class="pbtn" id="backBtn" type="button">Back</button><button class="pbtn" id="restartBtn" type="button">Start again</button></div>
     <h2>What if</h2>
@@ -150,11 +167,11 @@ const stepsEl = document.getElementById('steps'), whenEl = document.getElementBy
 const backBtn = document.getElementById('backBtn'), restartBtn = document.getElementById('restartBtn');
 const edgeBtns = [...document.querySelectorAll('[data-edge]')];
 const EDGES = ['carry', 'estimate', 'rules', 'stop'];
-const fresh = () => ({screen: 'entry', variant: null, payWith: 'au', alertSeen: false, ret: null, stopped: false});
+const fresh = () => ({screen: 'entry', variant: null, payWith: 'au', alertSeen: false, ret: null, stopped: false, tab: 'spend', stmt: false});
 let S = fresh(), hist = [], tid = 0;
 
 const bar = t => `<div class="status"><span>${t}</span><span>4G</span></div>`;
-const proto = (label, act, text) => `<div class="proto"><div class="plabel">Prototype</div>${label ? `<div class="small">${label}</div>` : ''}<button class="btn" data-act="${act}" data-hint>${text}</button></div>`;
+const proto = (label, act, text, hint = true) => `<div class="proto"><div class="plabel">Prototype</div>${label ? `<div class="small">${label}</div>` : ''}<button class="btn" data-act="${act}"${hint ? ' data-hint' : ''}>${text}</button></div>`;
 const li = t => `<div class="li"><span class="check">✓</span><span class="small dark">${t}</span></div>`;
 const coachStrip = () => `<div class="coach"><div class="h">Bachat Alerts · this card</div>
   <div class="item"><div class="t">Next year’s ₹2,950 fee</div><div class="bar"><i style="width:84%"></i></div><div class="small">About ₹3.35 lakh of ₹4 lakh spent. At your recent pace you’ll be ₹13,000 short on 14 Feb.</div></div>
@@ -162,7 +179,7 @@ const coachStrip = () => `<div class="coach"><div class="h">Bachat Alerts · thi
   <button class="note2" data-act="how" style="text-decoration:underline">Estimated from your bills. How we estimate</button></div>`;
 
 const T = {
-  entry: () => `<div class="in">${bar('9:12')}<div class="tick">✓</div><div class="title center">Paid ₹18,200</div><div class="sub center">SBI Cashback ••9032 · 22 Nov</div><div class="card"><div class="title" style="font-size:16px">Your credit report shows 2 more cards</div><div class="sub">Bachat Alerts can warn you before any of your cards loses you money: a fee that won’t be waived, a lounge visit you’ll miss, a voucher about to lapse.</div><button class="btn" data-act="setup" data-hint>Set up Bachat Alerts</button><button class="btn ghost" data-act="notnow">Not now</button></div></div>`,
+  entry: () => `<div class="in">${bar('9:12')}<div class="tick">✓</div><div class="title center">Paid ₹18,200</div><div class="sub center">SBI Cashback ••9032 · 22 Nov</div><div class="card"><div class="title" style="font-size:16px">Your credit report shows 2 more cards</div><div class="sub">See all your cards in one place: what you spend, what each card gives you and your rewards, with a warning before a card loses you money.</div><button class="btn" data-act="setup" data-hint>Set up Bachat Alerts</button><button class="btn ghost" data-act="notnow">Not now</button></div></div>`,
   found: () => {
     const v = S.variant;
     const chips = ['Regalia Gold', 'Millennia', 'Other'].map(n => `<button class="chip${v === n ? ' on' : ''}" data-act="variant" data-v="${n}"${!v && n === 'Regalia Gold' ? ' data-hint' : ''}>${n}</button>`).join('');
@@ -174,13 +191,44 @@ const T = {
   },
   consent: () => `<div class="in">${bar('9:14')}<button class="back" data-act="back">← Bachat Alerts</button><div class="title" style="margin-top:10px">Watch these 3 cards?</div><div class="card">${li('Paytm fetches each card’s monthly bill through Bharat Connect, for 12 months')}${li('Used only to show you your progress, never to sell you cards')}${li('We never read your SMS or email')}${li('Stop any time, and the bill data is deleted')}</div><div class="foot"><button class="btn" data-act="allow" data-hint>Allow for 12 months</button><button class="btn ghost" data-act="back">Cancel</button></div></div>`,
   home: () => {
-    const reg = S.alertSeen ? '<span class="warn">Move about ₹7,000 a month here until 14 Feb</span>' : '<span class="warn">₹13,000 short of the fee waiver at your pace</span>';
-    const qr = S.alertSeen;
-    return `<div class="in">${bar(qr ? '8:05' : '9:15')}<div class="title">Bachat Alerts</div><div class="sub">3 cards watched · estimates from your bills</div><div class="card" style="padding:4px 12px">
-      <div class="row first" style="align-items:flex-start"><div class="left" style="align-items:flex-start"><span class="dot"></span><div><div class="lbl">Regalia Gold ••4417</div><div class="meta">${reg}</div><div class="meta">Bill ₹26,400 due 5 Dec</div></div></div>${qr ? '' : '<button class="chip" data-act="bill" data-hint>Pay</button>'}</div>
-      <div class="row" style="align-items:flex-start"><div class="left" style="align-items:flex-start"><span class="dot ok"></span><div><div class="lbl">SBI Cashback ••9032</div><div class="meta"><span class="ok">Fee waived for next year</span> · ₹2.1 lakh of ₹2 lakh</div></div></div></div>
-      <div class="row" style="align-items:flex-start"><div class="left" style="align-items:flex-start"><span class="dot n"></span><div><div class="lbl">Paytm AU ••2268</div><div class="meta">Lifetime free · best on Paytm UPI</div></div></div></div></div>
-      ${qr ? `<div class="foot">${proto('Skip ahead: Priya pays at a kirana with Paytm.', 'toqr', 'Scan a shop’s QR')}</div>` : ''}</div>`;
+    const t = S.tab, st = S.stmt, after = S.alertSeen;
+    const hintTab = after ? '' : (t === 'spend' && st ? 'benefits' : t === 'benefits' ? 'rewards' : '');
+    const tabs = [['spend', 'Spending'], ['benefits', 'Benefits'], ['rewards', 'Rewards']].map(([k, n]) => `<button class="seg${t === k ? ' on' : ''}" data-act="tab" data-t="${k}"${hintTab === k ? ' data-hint' : ''}>${n}</button>`).join('');
+    const head = `<div class="in">${bar(after ? '8:05' : '9:15')}<div class="title">My cards</div><div class="sub">3 cards · from your bills${st ? ' and statements' : ''}</div><div class="segs">${tabs}</div>`;
+    let body = '';
+    if (t === 'spend') {
+      const cats = [['Groceries', 14800], ['Online shopping', 11400], ['Dining out', 9200], ['Travel', 8600], ['Bills and other', 6700]];
+      body = `<div class="card" style="padding:10px 12px"><div class="small">Latest bills, all cards</div><div class="big" style="font-size:26px;margin-top:0">₹50,700</div>
+        <div class="stack"><i style="width:52%;background:#1f4e99"></i><i style="width:36%;background:#6b7280"></i><i style="width:12%;background:#0f766e"></i></div>
+        <div class="lr"><span class="left"><span class="sw"></span>Regalia Gold</span><b>₹26,400</b></div><div class="lr"><span class="left"><span class="sw g"></span>SBI Cashback</span><b>₹18,200</b></div><div class="lr"><span class="left"><span class="sw t"></span>Paytm AU</span><b>₹6,100</b></div></div>` +
+        (st ? `<div class="card" style="padding:10px 12px"><div class="lbl">Where it went</div>${cats.map(([n, v]) => `<div class="cat"><span>${n}</span><div class="bar"><i style="width:${Math.round(v / 148)}%"></i></div><b>₹${v.toLocaleString('en-IN')}</b></div>`).join('')}<div class="note2" style="margin-top:4px">From your 3 statements. Online shopping is on SBI Cashback, which pays 5% there.</div></div>`
+            : `<div class="card" style="padding:10px 12px"><div class="lbl">See where it went</div><div class="small dark" style="margin-top:4px">Add last month’s statements to see spending by category, points and expiry dates.</div><button class="btn ghost" data-act="upload" data-hint>Add statements</button><div class="note2">Optional. We read each PDF once and don’t keep it. We never read your SMS or email.</div></div>`);
+    } else if (t === 'benefits') {
+      const bn = (cls, h, s2) => `<div class="bn"><span class="dot${cls}"></span><div><div class="small dark"><b>${h}</b></div><div class="small">${s2}</div></div></div>`;
+      body = `<div class="card" style="padding:2px 12px 10px">
+        <div class="ch"><span class="ico"></span>Regalia Gold ••4417</div>
+        ${bn('', 'Fee waived at ₹4 lakh a year', '<span class="warn">At risk:</span> ₹13,000 short by 14 Feb')}
+        ${bn(' ok', '3 lounge visits a quarter', '<span class="ok">On track</span> for Jan–Mar: needs ₹60,000 this quarter')}
+        ${bn('', '₹1,500 voucher per ₹1.5 lakh quarter', '<span class="warn">1 to claim</span> by 4 Dec')}
+        <div class="ch"><span class="ico g"></span>SBI Cashback ••9032</div>
+        ${bn(' n', '5% online, 1% in shops', 'Use it online; each rate is capped at ₹2,000 a cycle')}
+        ${bn(' ok', 'Fee waived at ₹2 lakh a year', '<span class="ok">Done</span> for next year')}
+        <div class="ch"><span class="ico t"></span>Paytm AU ••2268</div>
+        ${bn(' n', '8× points on Paytm UPI', 'Use it at Paytm QRs; lifetime free')}</div>`;
+    } else {
+      const ms = (h, w, cls, s2, chip) => `<div class="item"><div class="row first" style="padding:0"><span class="t">${h}</span>${chip || ''}</div><div class="bar"><i class="${cls}" style="width:${w}%"></i></div><div class="small">${s2}</div></div>`;
+      const fee = after ? '<span class="warn">Move about ₹7,000 a month here until 14 Feb</span>' : '₹3.35 lakh of ₹4 lakh · <span class="warn">₹13,000 short</span> at your pace';
+      body = (after ? '<div class="small" style="margin-top:10px"><span class="ok">✓ ₹1,500 voucher claimed on 25 Nov</span></div>' : `<div class="coach" style="margin-top:10px;padding:8px 12px"><div class="h">To claim</div><div class="row first" style="padding:2px 0 0"><span><span class="lbl">₹1,500 voucher</span><span class="meta">Regalia Gold milestone · claim by 4 Dec</span></span><button class="chip" data-act="claim">Claim</button></div></div>`) + `
+        <div class="sec">Milestones</div>
+        ${ms('Regalia Gold fee waiver', 84, '', fee, after ? '' : '<button class="chip" data-act="bill" data-hint style="padding:2px 9px">Pay bill</button>')}
+        ${ms('Lounge visits, Jan–Mar', 87, 'ok', '<span class="ok">On track:</span> ₹52,000 of ₹60,000 this quarter')}
+        ${ms('SBI Cashback fee waiver', 100, 'ok', '<span class="ok">Done:</span> ₹2.1 lakh of ₹2 lakh')}` +
+        (after ? '' : `<div class="sec">Points and cashback</div>` + (st
+          ? `<div class="lr"><span>Regalia Gold: 8,420 pts</span><span class="warn">1,050 expire 31 Mar</span></div><div class="lr"><span>SBI Cashback this cycle</span><b>₹638</b></div><div class="lr"><span>Paytm AU: 34 pts</span><span>122 if paid on Paytm UPI</span></div>`
+          : `<div class="small" style="margin-top:4px">Add statements to see points balances and what expires. <button class="link" data-act="upload">Add statements</button></div>`));
+    }
+    const foot = after ? `<div class="foot">${proto('Skip ahead: Priya pays at a kirana with Paytm.', 'toqr', 'Scan a shop’s QR')}</div>` : '';
+    return head + body + foot + '</div>';
   },
   bill: () => `<div class="in">${bar('8:40')}<button class="back" data-act="back">← Pay card bill</button><div class="sub" style="margin-top:12px">HDFC Regalia Gold ••4417</div><div class="big">₹26,400</div><div class="small">Due 5 Dec · minimum ₹1,320</div>${coachStrip()}<div class="foot"><button class="btn" data-act="paybill" data-hint>Pay ₹26,400 in full</button></div></div>`,
   billpaid: () => `<div class="in">${bar('8:41')}<div class="tick">✓</div><div class="title center">Paid ₹26,400</div><div class="sub center">HDFC Regalia Gold ••4417</div><div class="card"><div class="lbl">Bachat Alerts</div><div class="small dark" style="margin-top:6px">About ₹3.35 lakh of ₹4 lakh towards next year’s fee waiver. If a small shift of your usual spend can save the fee, we’ll tell you once.</div></div><div class="foot">${proto('Skip ahead to 3 December.', 'toalert', 'Skip to 3 Dec')}</div></div>`,
@@ -198,31 +246,34 @@ const T = {
     return `<div class="in">${bar('19:21')}<div class="tick">✓</div><div class="title center">Paid ₹1,250</div><div class="sub center">Sharma Kirana · ${au ? 'Paytm AU card' : 'HDFC savings account'}</div><div class="card"><div class="lbl">${au ? '+25 points on Paytm AU' : 'No points on this payment'}</div><div class="small dark" style="margin-top:6px">${au ? 'Worth up to ₹25 when redeemed for Paytm Gold.' : 'Paying with your Paytm AU card would have earned 25 points.'}</div></div><div class="foot">${proto('That’s the journey. Try the “What if” cases, or start again.', 'restart', 'Start again')}</div></div>`;
   },
   carry: () => `<div class="in">${bar('9:20')}<div class="title" style="margin-top:6px">Bachat Alerts is paused</div><div class="sub">You paid ₹12,000 of your ₹26,400 Regalia Gold bill.</div><div class="card"><div class="small dark">While you carry a balance, Bachat Alerts won’t suggest spending on any card. You’ll still see due dates and fees.</div><div class="small dark" style="margin-top:8px">Paying the remaining ₹14,400 soon avoids interest of at least ₹540 a month, at 3.75% a month.</div></div><div class="foot">${proto('', 'journey', 'Back to the journey')}</div></div>`,
-  estimate: () => `<div class="in">${bar('8:42')}<button class="back" data-act="journey">← How we estimate</button><div class="card"><div class="lbl">Regalia Gold, since 15 Feb</div><div class="small dark" style="margin-top:6px">We add up the bills you let us fetch: about ₹3.35 lakh.</div><div class="small dark" style="margin-top:6px">Some spends, like rent, fuel and wallet loads, don’t count towards the waiver, so the real figure is probably ₹3.2–3.35 lakh.</div></div><button class="btn ghost" data-act="issuer">Check in the HDFC app</button><button class="btn ghost" data-act="upload">Upload a statement to confirm</button><div class="note2">Statement upload is optional and comes in a later version.</div><div class="foot">${proto('', 'journey', 'Back to the journey')}</div></div>`,
+  estimate: () => `<div class="in">${bar('8:42')}<button class="back" data-act="journey">← How we estimate</button><div class="card"><div class="lbl">Regalia Gold, since 15 Feb</div><div class="small dark" style="margin-top:6px">We add up the bills you let us fetch: about ₹3.35 lakh.</div><div class="small dark" style="margin-top:6px">Some spends, like rent, fuel and wallet loads, don’t count towards the waiver, so the real figure is probably ₹3.2–3.35 lakh.</div></div><button class="btn ghost" data-act="issuer">Check in the HDFC app</button><button class="btn ghost" data-act="upload">Upload a statement to confirm</button><div class="note2">Statements are optional; we read each PDF once and don’t keep it.</div><div class="foot">${proto('', 'journey', 'Back to the journey')}</div></div>`,
   rules: () => `<div class="in">${bar('9:00')}<div class="small" style="margin-top:2px">Example from 1 July 2026</div><div class="push"><div class="app">Paytm · Bachat Alerts</div><div class="lbl" style="margin-top:3px">Regalia Gold lounge rules changed</div><div class="small dark" style="margin-top:3px">You keep your lounge visits this quarter.</div></div><div class="card"><div class="small dark">From 1 July, the 3 lounge visits each quarter need ₹60,000 spent in the previous quarter.</div><div class="small dark" style="margin-top:6px">You spent about ₹78,000 last quarter, so nothing changes for you yet. We’ll warn you if a quarter looks light.</div></div><div class="foot">${proto('', 'journey', 'Back to the journey')}</div></div>`,
-  stop: () => `<div class="in">${bar('9:30')}<button class="back" data-act="journey">← Bachat Alerts settings</button><div class="card" style="padding:4px 12px">${[['Regalia Gold ••4417', 'Consent until 22 Nov 2027'], ['SBI Cashback ••9032', 'Consent until 22 Nov 2027'], ['Paytm AU ••2268', 'Consent until 22 Nov 2027']].map((r, i) => `<div class="row${i ? '' : ' first'}"><span><span class="lbl">${r[0]}</span><span class="meta">${S.stopped ? 'Not watched' : r[1]}</span></span><span class="toggle${S.stopped ? ' off' : ''}"></span></div>`).join('')}</div>${S.stopped ? '<div class="small" style="margin-top:10px">Stopped. The bill data kept for Bachat Alerts has been deleted.</div>' : '<button class="btn ghost" data-act="stopall" data-hint>Stop watching all cards</button>'}<div class="foot">${proto('', 'journey', 'Back to the journey')}</div></div>`
+  stop: () => `<div class="in">${bar('9:30')}<button class="back" data-act="journey">← Bachat Alerts settings</button><div class="card" style="padding:4px 12px">${[['Regalia Gold ••4417', 'Consent until 22 Nov 2027'], ['SBI Cashback ••9032', 'Consent until 22 Nov 2027'], ['Paytm AU ••2268', 'Consent until 22 Nov 2027']].map((r, i) => `<div class="row${i ? '' : ' first'}"><span><span class="lbl">${r[0]}</span><span class="meta">${S.stopped ? 'Not watched' : r[1]}</span></span><span class="toggle${S.stopped ? ' off' : ''}"></span></div>`).join('')}</div>${S.stopped ? '<div class="small" style="margin-top:10px">Stopped. The bill data kept for Bachat Alerts has been deleted.</div>' : '<button class="btn ghost" data-act="stopall" data-hint>Stop watching all cards</button>'}<div class="foot">${proto('', 'journey', 'Back to the journey', S.stopped)}</div></div>`
 };
 
 const M = {
   entry: {step: 0, phase: 'Ships week 10', date: '22 November', note: 'Priya has just paid her SBI Cashback bill on Paytm. Her credit report, which Paytm already shows her, lists two more cards.'},
   found: {step: 0, phase: 'Ships week 10', date: '22 November', note: 'The credit report shows the bank, not the card’s name, so Priya picks it once. Tap Regalia Gold.'},
   consent: {step: 0, phase: 'Ships week 10', date: '22 November', note: 'NBBL lets apps fetch card bills only with time-bound consent, and only to show the customer. That is all this asks for.'},
-  bill: {step: 1, phase: 'Ships week 4', date: '25 November', note: 'At the bill, she sees where the card stands on its fee waiver and lounge gate, estimated from her bills.'},
-  billpaid: {step: 1, phase: 'Ships week 4', date: '25 November', note: 'It stays quiet unless a small change in her usual spending can save money.'},
-  alert: {step: 2, phase: 'Ships week 10', date: '3 December', note: 'One alert, because moving a little usual spend saves a ₹2,950 fee. It checks her other cards first.'},
-  qr: {step: 3, phase: 'Ships week 10', date: '9 December', note: 'At a Paytm QR it compares the ways she can pay on UPI. Only RuPay credit cards work there, so: Paytm AU or her bank.'},
-  qrpaid: {step: 3, phase: 'Ships week 10', date: '9 December', note: 'Card payments on UPI also earn Paytm merchant fees above small amounts, which helps pay for the feature.'},
-  carry: {step: 2, phase: 'Ships week 10', date: '6 December', note: 'If she pays less than the full bill, all spending suggestions stop, so a reward never pushes her into debt.'},
-  estimate: {step: 1, phase: 'Ships week 4', date: '25 November', note: 'Every figure is an estimate with a range and a way to check it. Statement upload comes in version 2.'},
-  rules: {step: 2, phase: 'Ships week 10', date: '1 July 2026 (example)', note: 'A real July 2026 change. Each user is told what a rule change means for them.'},
+  bill: {step: 2, phase: 'Ships week 4', date: '25 November', note: 'At the bill, she sees where this card stands on its fee waiver and lounge gate, estimated from her bills.'},
+  billpaid: {step: 2, phase: 'Ships week 4', date: '25 November', note: 'It stays quiet unless a small change in her usual spending can save money.'},
+  alert: {step: 3, phase: 'Ships week 10', date: '3 December', note: 'One alert, because moving a little usual spend saves a ₹2,950 fee. It checks her other cards first.'},
+  qr: {step: 4, phase: 'Ships week 10', date: '9 December', note: 'At a Paytm QR it compares the ways she can pay on UPI. Only RuPay credit cards work there, so: Paytm AU or her bank.'},
+  qrpaid: {step: 4, phase: 'Ships week 10', date: '9 December', note: 'Card payments on UPI also earn Paytm merchant fees above small amounts, which helps pay for the feature.'},
+  carry: {step: 3, phase: 'Ships week 10', date: '6 December', note: 'If she pays less than the full bill, all spending suggestions stop, so a reward never pushes her into debt.'},
+  estimate: {step: 2, phase: 'Ships week 4', date: '25 November', note: 'Every figure is an estimate with a range and a way to check it, such as adding a statement.'},
+  rules: {step: 3, phase: 'Ships week 10', date: '1 July 2026 (example)', note: 'A real July 2026 change. Each user is told what a rule change means for them.'},
   stop: {step: 0, phase: 'Ships week 10', date: 'Any time', note: 'Consent lasts 12 months and ends in one tap; the bill data is then deleted, as NBBL requires.'}
 };
 const HN = {
-  first: 'One line per card: what is at risk and what is safe. A short list, not a dashboard. Tap Pay on Regalia Gold.',
-  after: 'The Regalia Gold line now shows the one thing to do. Next, Priya pays at a kirana.'
+  spend0: 'My cards: what Priya spent on each card, from the bills Paytm fetches. To see where it went, tap Add statements.',
+  spend1: 'Categories come from statements she chose to add, read once and not kept. Next, what her cards give her: tap Benefits.',
+  benefits: 'Each card’s main benefits, what they need, and which card to use for what. Tap Rewards.',
+  rewards: 'Milestones, vouchers and points in one place, with claim-by dates. The fee waiver is at risk: tap Pay bill.',
+  after: 'The fee waiver line now shows the one thing to do. Next, Priya pays at a kirana.'
 };
 const ALL_NOTES = [...Object.values(M).map(m => m.note), ...Object.values(HN)];
-const meta = () => S.screen === 'home' ? {step: S.alertSeen ? 2 : 0, phase: 'Ships week 10', date: S.alertSeen ? '3 December' : '22 November', note: S.alertSeen ? HN.after : HN.first} : M[S.screen];
+const meta = () => S.screen === 'home' ? {step: S.alertSeen ? 3 : 1, phase: 'Ships week 10', date: S.alertSeen ? '3 December' : '22 November', note: S.alertSeen ? HN.after : S.tab === 'spend' ? (S.stmt ? HN.spend1 : HN.spend0) : HN[S.tab]} : M[S.screen];
 
 const render = () => {
   view.innerHTML = T[S.screen]();
@@ -256,7 +307,7 @@ const A = {
   how: () => edge('estimate'),
   paybill: () => go('billpaid'),
   toalert: () => go('alert'),
-  gotit: () => go('home', s => { s.alertSeen = true; }),
+  gotit: () => go('home', s => { s.alertSeen = true; s.tab = 'rewards'; }),
   notuseful: () => toast('Thanks. Bachat Alerts will send fewer alerts like this.'),
   toqr: () => go('qr', s => { s.payWith = 'au'; }),
   pick: b => { S.payWith = b.dataset.w; render(); },
@@ -264,7 +315,9 @@ const A = {
   restart: () => restart(),
   journey: () => go(S.ret || 'entry', s => { s.ret = null; s.stopped = false; }),
   issuer: () => toast('Opens the HDFC Bank app.'),
-  upload: () => toast('Statement upload comes in version 2.'),
+  upload: () => { const fromHome = S.screen === 'home'; go(S.screen, s => { s.stmt = true; }); toast(fromHome ? 'Read 3 statements (illustrative). The PDFs are not kept.' : 'Statement added. About ₹3.31 lakh counts towards the waiver.'); },
+  tab: b => go('home', s => { s.tab = b.dataset.t; }),
+  claim: () => toast('Opens the HDFC Bank app to claim the voucher.'),
   stopall: () => { S.stopped = true; render(); toast('Stopped watching all cards.'); },
   back: () => back()
 };
